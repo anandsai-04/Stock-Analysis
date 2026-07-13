@@ -1,28 +1,34 @@
 from fastapi import FastAPI, UploadFile, File, Form, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 
-from agents.analyst_agent import get_financial_analysis
+from agents.supervisor import run_supervisor
 
 app = FastAPI(title="Quant Finance AI Analyst")
 
+# Add CORS to allow Next.js frontend to talk to FastAPI
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, restrict this to the Vercel URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 class AnalysisRequest(BaseModel):
     ticker: str
-    provider: str = "openai" # "openai" or "ollama"
-    model: str = "gpt-4o" # or "llama3" etc.
-
-@app.get("/")
-def read_root():
-    return {"message": "Quant Finance AI Analyst API is running."}
+    provider: Optional[str] = "openai"
+    model: Optional[str] = "gpt-4o"
 
 @app.post("/api/analyze")
-def analyze_ticker(request: AnalysisRequest):
+async def analyze_ticker(request: AnalysisRequest):
     try:
-        result = get_financial_analysis(
-            ticker=request.ticker,
-            provider=request.provider,
-            model=request.model
-        )
-        return {"analysis": result}
+        report = run_supervisor(request.ticker, request.provider, request.model)
+        return {"analysis": report}
     except Exception as e:
         return {"error": str(e)}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
