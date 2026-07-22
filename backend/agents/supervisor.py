@@ -4,7 +4,7 @@ from agents.domain_agent import create_domain_agent
 from agents.analyst_agent import get_llm
 from langchain.schema import HumanMessage
 
-def run_supervisor(ticker: str, provider: str = "openai", model: str = "gpt-4o") -> str:
+def run_supervisor(ticker: str, competitor_ticker: str = "", provider: str = "openai", model: str = "gpt-4o") -> str:
     """The Supervisor Agent that orchestrates the subagents and synthesizes the final report."""
     
     print(f"--- SUPERVISOR: Initiating Analysis for {ticker} ---")
@@ -24,7 +24,11 @@ def run_supervisor(ticker: str, provider: str = "openai", model: str = "gpt-4o")
     
     # 3. Run Domain Agent
     print(f"--- SUPERVISOR: Delegating to Domain Intelligence Agent ---")
-    domain_prompt = f"Evaluate the following quantitative data for {ticker} against its industry baselines:\n{quant_result}"
+    if competitor_ticker:
+        domain_prompt = f"Evaluate the following quantitative data for {ticker} against its industry baselines, and compare it specifically against {competitor_ticker}:\n{quant_result}"
+    else:
+        domain_prompt = f"Evaluate the following quantitative data for {ticker} against its industry baselines:\n{quant_result}"
+        
     try:
         domain_result = domain_agent.invoke({"input": domain_prompt})["output"]
     except Exception as e:

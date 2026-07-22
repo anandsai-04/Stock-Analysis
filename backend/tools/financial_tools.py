@@ -84,14 +84,58 @@ def financial_ratio_calculator(ticker: str) -> str:
         
         report += f"\n--- 3. Solvency Ratios ---\n"
         report += f"Debt-to-Equity: {debt_to_equity}\n"
+        # Activity Ratios
+        inventory = info.get("inventory", 0)
+        cogs = info.get("costOfRevenue", 0)
         
-        report += f"\n--- 4. Profitability Ratios ---\n"
-        report += f"Gross Profit Margin: {gross_margin}\n"
-        report += f"Operating Profit Margin: {operating_margin}\n"
-        report += f"Net Profit Margin: {net_profit_margin}\n"
-        report += f"Return on Assets (ROA): {return_on_assets}\n"
-        report += f"Return on Equity (ROE): {return_on_equity}\n"
+        ratios = f"--- Financial Ratios for {ticker} ---\n"
+        ratios += f"Liquidity - Current Ratio: {current_ratio}\n"
+        ratios += f"Solvency - Debt to Equity: {debt_to_equity}\n"
+        ratios += f"Profitability - Profit Margin: {profit_margin}%\n"
+        ratios += f"Profitability - ROE: {roe}%\n"
+        
+        return ratios
+    except Exception as e:
+        return f"Error calculating ratios: {str(e)}"
+
+@tool
+def vertical_analysis_tool(ticker: str) -> str:
+    """Performs Vertical Analysis (Common-Size Income Statement) for a company.
+    Converts all major expenses (COGS, SG&A) into a percentage of Total Revenue."""
+    try:
+        company = yf.Ticker(ticker)
+        income_stmt = company.financials
+        
+        if income_stmt is None or income_stmt.empty:
+            return f"No financial statement data available for {ticker}"
+            
+        latest_year = income_stmt.columns[0]
+        data = income_stmt[latest_year]
+        
+        total_revenue = data.get("Total Revenue", 0)
+        if total_revenue == 0:
+            return "Total Revenue is 0 or missing, cannot perform vertical analysis."
+            
+        cogs = data.get("Cost Of Revenue", 0)
+        gross_profit = data.get("Gross Profit", 0)
+        sga = data.get("Selling General And Administration", 0)
+        operating_income = data.get("Operating Income", 0)
+        net_income = data.get("Net Income", 0)
+        
+        cogs_pct = round((cogs / total_revenue) * 100, 2)
+        gross_pct = round((gross_profit / total_revenue) * 100, 2)
+        sga_pct = round((sga / total_revenue) * 100, 2)
+        op_inc_pct = round((operating_income / total_revenue) * 100, 2)
+        net_inc_pct = round((net_income / total_revenue) * 100, 2)
+        
+        report = f"--- Vertical Analysis (Common-Size) for {ticker} ---\n"
+        report += f"Total Revenue: 100%\n"
+        report += f"Cost of Revenue (COGS): {cogs_pct}% of Revenue\n"
+        report += f"Gross Profit Margin: {gross_pct}%\n"
+        report += f"SG&A Expenses: {sga_pct}% of Revenue\n"
+        report += f"Operating Margin: {op_inc_pct}%\n"
+        report += f"Net Profit Margin: {net_inc_pct}%\n"
         
         return report
     except Exception as e:
-        return f"Error calculating financial ratios: {str(e)}"
+        return f"Error performing vertical analysis: {str(e)}"

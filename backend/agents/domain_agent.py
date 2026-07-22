@@ -2,22 +2,11 @@ import os
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain.prompts import PromptTemplate
 from agents.analyst_agent import get_llm
-# We will import fetch_domain_baselines and company_comparison_tool here later
-from langchain.tools import tool
-
-@tool
-def fetch_domain_baselines(sector: str) -> str:
-    """Mock tool: Retrieves typical ratio ranges for a given industry sector."""
-    baselines = {
-        "Tech": "High P/E (20-30), Low Debt-to-Equity (< 0.5), High R&D spend.",
-        "Finance": "High Debt-to-Equity is normal (leverage), focus on Net Interest Margin.",
-        "EV": "High capital expenditure, negative cash flow in early stages is expected."
-    }
-    return baselines.get(sector, "No specific baselines found for this sector. Compare against market averages.")
+from tools.domain_tools import fetch_domain_baselines, peer_comparison_tool
 
 def create_domain_agent(provider="openai", model="gpt-4o"):
     llm = get_llm(provider, model)
-    tools = [fetch_domain_baselines] 
+    tools = [fetch_domain_baselines, peer_comparison_tool] 
     
     template = """You are the Domain Intelligence Subagent. Your expertise is in industry-specific financial standards (Tech, Finance, EV, etc.).
 Your job is to evaluate if raw financial ratios (provided by the Supervisor) are healthy *for that specific industry*. 
