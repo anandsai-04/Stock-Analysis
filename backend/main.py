@@ -23,8 +23,14 @@ app.add_middleware(
 class AnalysisRequest(BaseModel):
     ticker: str
     competitor_ticker: Optional[str] = ""
-    provider: Optional[str] = "openai"
-    model: Optional[str] = "gpt-4o"
+    quant_provider: Optional[str] = "openai"
+    quant_model: Optional[str] = "gpt-4o"
+    domain_provider: Optional[str] = "openai"
+    domain_model: Optional[str] = "gpt-4o"
+    extraction_provider: Optional[str] = "openai"
+    extraction_model: Optional[str] = "gpt-4o"
+    supervisor_provider: Optional[str] = "openai"
+    supervisor_model: Optional[str] = "gpt-4o"
 
 class ApiKeyRequest(BaseModel):
     provider: str
@@ -66,7 +72,18 @@ def update_api_key(request: ApiKeyRequest):
 @app.post("/api/analyze")
 async def analyze_ticker(request: AnalysisRequest):
     try:
-        report = run_supervisor(request.ticker, request.competitor_ticker, request.provider, request.model)
+        report = run_supervisor(
+            ticker=request.ticker,
+            competitor_ticker=request.competitor_ticker,
+            quant_provider=request.quant_provider,
+            quant_model=request.quant_model,
+            domain_provider=request.domain_provider,
+            domain_model=request.domain_model,
+            extraction_provider=request.extraction_provider,
+            extraction_model=request.extraction_model,
+            supervisor_provider=request.supervisor_provider,
+            supervisor_model=request.supervisor_model
+        )
         return {"analysis": report}
     except Exception as e:
         return {"error": str(e)}

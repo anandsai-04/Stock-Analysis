@@ -8,21 +8,47 @@ st.markdown("Multi-Agent Financial Diagnostics: Time Series, Vertical Analysis &
 
 # Sidebar for Settings
 with st.sidebar:
-    st.header("Settings")
-    provider = st.selectbox("AI Provider", ["openai", "groq", "gemini", "ollama"])
-    model = st.text_input("Model Name", value="gpt-4o")
+    st.header("⚙️ Agent Routing")
+    st.markdown("Assign different models to different agents to load balance token limits.")
     
-    if provider != "ollama":
-        api_key = st.text_input(f"{provider.upper()} API Key", type="password")
-        if st.button("Save API Key"):
-            if api_key:
-                res = requests.post("http://127.0.0.1:8000/api/settings/keys", json={"provider": provider, "key": api_key})
-                if res.status_code == 200:
-                    st.success("API Key saved securely!")
-                else:
-                    st.error("Failed to save API Key.")
-            else:
-                st.warning("Please enter a key before saving.")
+    with st.expander("Quant Agent", expanded=True):
+        quant_provider = st.selectbox("Provider", ["openai", "groq", "gemini", "ollama"], key="q_prov")
+        quant_model = st.text_input("Model", value="gpt-4o", key="q_mod")
+        
+    with st.expander("Extraction Agent", expanded=True):
+        ext_provider = st.selectbox("Provider", ["gemini", "openai", "groq", "ollama"], key="e_prov")
+        ext_model = st.text_input("Model", value="gemini-2.5-flash", key="e_mod")
+        
+    with st.expander("Domain Agent", expanded=True):
+        dom_provider = st.selectbox("Provider", ["groq", "openai", "gemini", "ollama"], key="d_prov")
+        dom_model = st.text_input("Model", value="llama-3.3-70b-versatile", key="d_mod")
+        
+    with st.expander("Supervisor Agent", expanded=True):
+        sup_provider = st.selectbox("Provider", ["openai", "groq", "gemini", "ollama"], key="s_prov")
+        sup_model = st.text_input("Model", value="gpt-4o", key="s_mod")
+    
+    st.divider()
+    
+    st.header("🔑 API Key Manager")
+    st.markdown("Store multiple keys. Agents will use the key for their assigned provider.")
+    
+    with st.expander("OpenAI"):
+        openai_key = st.text_input("OpenAI API Key", type="password")
+        if st.button("Save OpenAI Key"):
+            requests.post("http://127.0.0.1:8000/api/settings/keys", json={"provider": "openai", "key": openai_key})
+            st.success("Saved!")
+            
+    with st.expander("Groq"):
+        groq_key = st.text_input("Groq API Key", type="password")
+        if st.button("Save Groq Key"):
+            requests.post("http://127.0.0.1:8000/api/settings/keys", json={"provider": "groq", "key": groq_key})
+            st.success("Saved!")
+            
+    with st.expander("Google Gemini"):
+        gemini_key = st.text_input("Gemini API Key", type="password")
+        if st.button("Save Gemini Key"):
+            requests.post("http://127.0.0.1:8000/api/settings/keys", json={"provider": "gemini", "key": gemini_key})
+            st.success("Saved!")
 
 # Main Interface
 col1, col2 = st.columns(2)
@@ -35,13 +61,19 @@ if st.button("Analyze", type="primary"):
     if not ticker:
         st.warning("Please enter a ticker symbol.")
     else:
-        with st.spinner("Synthesizing Report... Executing Prophet Models & Scraping MD&A..."):
+        with st.spinner("Synthesizing Report... This may take a moment depending on the models used."):
             try:
                 payload = {
                     "ticker": ticker,
                     "competitor_ticker": competitor,
-                    "provider": provider,
-                    "model": model
+                    "quant_provider": quant_provider,
+                    "quant_model": quant_model,
+                    "domain_provider": dom_provider,
+                    "domain_model": dom_model,
+                    "extraction_provider": ext_provider,
+                    "extraction_model": ext_model,
+                    "supervisor_provider": sup_provider,
+                    "supervisor_model": sup_model
                 }
                 response = requests.post("http://127.0.0.1:8000/api/analyze", json=payload)
                 
