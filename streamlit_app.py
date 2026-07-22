@@ -61,30 +61,38 @@ if st.button("Analyze", type="primary"):
     if not ticker:
         st.warning("Please enter a ticker symbol.")
     else:
-        with st.spinner("Synthesizing Report... This may take a moment depending on the models used."):
-            try:
-                payload = {
-                    "ticker": ticker,
-                    "competitor_ticker": competitor,
-                    "quant_provider": quant_provider,
-                    "quant_model": quant_model,
-                    "domain_provider": dom_provider,
-                    "domain_model": dom_model,
-                    "extraction_provider": ext_provider,
-                    "extraction_model": ext_model,
-                    "supervisor_provider": sup_provider,
-                    "supervisor_model": sup_model
-                }
-                response = requests.post("http://127.0.0.1:8000/api/analyze", json=payload)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if "error" in data:
-                        st.error(f"Error: {data['error']}")
-                    else:
-                        st.success("Analysis Complete!")
-                        st.markdown(data["analysis"])
-                else:
-                    st.error(f"Backend failed with status code: {response.status_code}")
-            except Exception as e:
-                st.error(f"Connection error: Make sure the FastAPI backend is running! Details: {e}")
+        status_box = st.status("Initializing Analysis...")
+        report_placeholder = st.empty()
+        
+        try:
+            payload = {
+                "ticker": ticker,
+                "competitor_ticker": competitor,
+                "quant_provider": quant_provider,
+                "quant_model": quant_model,
+                "domain_provider": dom_provider,
+                "domain_model": dom_model,
+                "extraction_provider": ext_provider,
+                "extraction_model": ext_model,
+                "supervisor_provider": sup_provider,
+                "supervisor_model": sup_model
+            }
+            import json
+            response = requests.post("http://127.0.0.1:8000/api/analyze", json=payload, stream=True)
+            
+            if response.status_code == 200:
+                for line in response.iter_lines():
+                    if line:
+                        data = json.loads(line)
+                        if "status" in data:
+                            status_box.write(f"🔄 {data['status']}")
+                        elif "final_report" in data:
+                            status_box.update(label="Analysis Complete!", state="complete", expanded=False)
+                            report_placeholder.markdown(data["final_report"])
+                        elif "error" in data:
+                            status_box.update(label="Error Occurred", state="error")
+                            st.error(data["error"])
+            else:
+                st.error(f"Backend failed with status code: {response.status_code}")
+        except Exception as e:
+            st.error(f"Connection error: Make sure the FastAPI backend is running! Details: {e}")

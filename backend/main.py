@@ -69,10 +69,12 @@ def update_api_key(request: ApiKeyRequest):
     os.environ[env_key] = request.key
     return {"status": "success"}
 
+from fastapi.responses import StreamingResponse
+
 @app.post("/api/analyze")
 async def analyze_ticker(request: AnalysisRequest):
     try:
-        report = run_supervisor(
+        generator = run_supervisor(
             ticker=request.ticker,
             competitor_ticker=request.competitor_ticker,
             quant_provider=request.quant_provider,
@@ -84,7 +86,7 @@ async def analyze_ticker(request: AnalysisRequest):
             supervisor_provider=request.supervisor_provider,
             supervisor_model=request.supervisor_model
         )
-        return {"analysis": report}
+        return StreamingResponse(generator, media_type="application/x-ndjson")
     except Exception as e:
         return {"error": str(e)}
 
