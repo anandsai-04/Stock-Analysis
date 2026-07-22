@@ -73,6 +73,25 @@ def financial_ratio_calculator(ticker: str) -> str:
         return_on_assets = info.get('returnOnAssets', 'N/A')
         return_on_equity = info.get('returnOnEquity', 'N/A')
         
+        # 5. YoY Growth (if financials are available)
+        yoy_rev_growth = "N/A"
+        yoy_ni_growth = "N/A"
+        try:
+            financials = stock.financials
+            if not financials.empty and len(financials.columns) >= 2:
+                # Use first two columns (most recent and previous year)
+                recent_rev = financials.iloc[:, 0].get("Total Revenue", 0)
+                prev_rev = financials.iloc[:, 1].get("Total Revenue", 0)
+                if prev_rev and prev_rev != 0:
+                    yoy_rev_growth = f"{round(((recent_rev - prev_rev) / prev_rev) * 100, 2)}%"
+                
+                recent_ni = financials.iloc[:, 0].get("Net Income", 0)
+                prev_ni = financials.iloc[:, 1].get("Net Income", 0)
+                if prev_ni and prev_ni != 0:
+                    yoy_ni_growth = f"{round(((recent_ni - prev_ni) / abs(prev_ni)) * 100, 2)}%"
+        except Exception:
+            pass
+
         report = f"Calculated Ratios for {ticker}:\n"
         report += f"\n--- 1. Activity Ratios ---\n"
         report += f"Inventory Turnover: {inventory_turnover}\n"
@@ -91,6 +110,10 @@ def financial_ratio_calculator(ticker: str) -> str:
         report += f"Net Profit Margin: {net_profit_margin}\n"
         report += f"Return on Assets (ROA): {return_on_assets}\n"
         report += f"Return on Equity (ROE): {return_on_equity}\n"
+
+        report += f"\n--- 5. Year-over-Year (YoY) Growth ---\n"
+        report += f"YoY Revenue Growth: {yoy_rev_growth}\n"
+        report += f"YoY Net Income Growth: {yoy_ni_growth}\n"
         
         return report
     except Exception as e:

@@ -1,4 +1,5 @@
 import json
+import yfinance as yf
 from agents.quant_agent import create_quant_agent
 from agents.extraction_agent import create_extraction_agent
 from agents.domain_agent import create_domain_agent
@@ -21,6 +22,31 @@ def run_supervisor(
     
     yield json.dumps({"status": f"Initializing Subagents for {ticker}..."}) + "\n"
     
+    # --- UI DASHBOARD DATA EXTRACTION ---
+    yield json.dumps({"status": f"Fetching raw quantitative data for Streamlit Dashboard..."}) + "\n"
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period="6mo")
+        dates = hist.index.strftime('%Y-%m-%d').tolist()
+        prices = hist['Close'].tolist()
+        
+        info = stock.info
+        metrics = {
+            "Current Price": info.get("currentPrice", "N/A"),
+            "Market Cap": info.get("marketCap", "N/A"),
+            "P/E Ratio": info.get("trailingPE", "N/A"),
+            "52 Week High": info.get("fiftyTwoWeekHigh", "N/A"),
+            "52 Week Low": info.get("fiftyTwoWeekLow", "N/A")
+        }
+        
+        # Yield the raw data for Streamlit to render charts/metrics
+        yield json.dumps({
+            "chart_data": {"dates": dates, "prices": prices},
+            "metrics_data": metrics
+        }) + "\n"
+    except Exception as e:
+        yield json.dumps({"status": f"Warning: Failed to fetch dashboard data: {str(e)}"}) + "\n"
+
     # 1. Initialize Subagents with their dedicated LLMs
     quant_agent = create_quant_agent(quant_provider, quant_model)
     domain_agent = create_domain_agent(domain_provider, domain_model)
@@ -61,20 +87,23 @@ def run_supervisor(
     yield json.dumps({"status": f"Synthesizing Final Report using Supervisor ({supervisor_model})..."}) + "\n"
     llm = get_llm(supervisor_provider, supervisor_model)
     synthesis_prompt = f"""You are the Lead Supervisor of a Quant Finance AI system. 
-Synthesize the findings of your subagents into a highly professional, comprehensive Markdown report for {ticker}.
+Synthesize the findings of your subagents into a highly professional, highly detailed, institutional-grade Markdown report for {ticker}.
     
-    Quant Data Findings:
+    Quant Data Findings (Vertical Analysis & YoY Growth):
     {quant_result}
     
-    Domain Expert Findings:
+    Domain Expert Findings (Peer Comparison):
     {domain_result}
     
-    Document Extraction Findings:
+    Document Extraction Findings (Verbatim Quotes & Proofs):
     {extraction_result}
     
-    Format the report with clear headings (e.g., 'Quantitative Overview', 'Industry & Domain Context', 'Qualitative & Causal Analysis').
-    Avoid repeating yourself. Ensure it sounds like a cohesive analysis from a top-tier financial firm.
-    Include a disclaimer that this is AI-generated and not financial advice.
+    CRITICAL MANDATES:
+    1. Provide a massive, multi-page report. Do not summarize briefly. Go deep into the details.
+    2. Include specific sections: 'Executive Summary', 'Vertical Analysis', 'Year-over-Year (YoY) Growth', 'Peer Comparison', 'Liquidity & Solvency Deep Dive', and 'Qualitative Causal Analysis'.
+    3. You MUST include specific numbers and verbatim quotes provided by the Extraction and Domain agents. Do not use generic placeholders like '$[Plausible Value]' or '~43%'. If you don't have the exact number, state that the data is unavailable.
+    4. Ensure it reads like a top-tier Wall Street research report.
+    5. Include a disclaimer that this is AI-generated and not financial advice.
     """
     
     final_report = llm.invoke([HumanMessage(content=synthesis_prompt)]).content

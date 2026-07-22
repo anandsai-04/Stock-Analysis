@@ -62,6 +62,10 @@ if st.button("Analyze", type="primary"):
         st.warning("Please enter a ticker symbol.")
     else:
         status_box = st.status("Initializing Analysis...")
+        
+        # UI Placeholders for the new visualization dashboard
+        metrics_placeholder = st.empty()
+        chart_placeholder = st.empty()
         report_placeholder = st.empty()
         
         try:
@@ -86,6 +90,21 @@ if st.button("Analyze", type="primary"):
                         data = json.loads(line)
                         if "status" in data:
                             status_box.write(f"🔄 {data['status']}")
+                        elif "metrics_data" in data:
+                            metrics = data["metrics_data"]
+                            with metrics_placeholder.container():
+                                st.subheader("📊 Key Performance Indicators")
+                                cols = st.columns(len(metrics))
+                                for idx, (key, val) in enumerate(metrics.items()):
+                                    cols[idx].metric(label=key, value=val)
+                        elif "chart_data" in data:
+                            chart_info = data["chart_data"]
+                            import pandas as pd
+                            df = pd.DataFrame({"Date": chart_info["dates"], "Price": chart_info["prices"]})
+                            df.set_index("Date", inplace=True)
+                            with chart_placeholder.container():
+                                st.subheader("📈 6-Month Price History")
+                                st.line_chart(df)
                         elif "final_report" in data:
                             status_box.update(label="Analysis Complete!", state="complete", expanded=False)
                             report_placeholder.markdown(data["final_report"])
