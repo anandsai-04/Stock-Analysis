@@ -2,8 +2,6 @@ import os
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain.prompts import PromptTemplate
 from agents.analyst_agent import get_llm
-from langchain.agents import create_react_agent, AgentExecutor
-from langchain.prompts import PromptTemplate
 from tools.financial_tools import market_data_tool, financial_ratio_calculator, vertical_analysis_tool
 from tools.time_series_tools import prophet_forecaster, arima_forecaster_tool, garch_volatility_tool
 

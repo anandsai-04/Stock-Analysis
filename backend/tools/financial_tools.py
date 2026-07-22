@@ -84,17 +84,15 @@ def financial_ratio_calculator(ticker: str) -> str:
         
         report += f"\n--- 3. Solvency Ratios ---\n"
         report += f"Debt-to-Equity: {debt_to_equity}\n"
-        # Activity Ratios
-        inventory = info.get("inventory", 0)
-        cogs = info.get("costOfRevenue", 0)
         
-        ratios = f"--- Financial Ratios for {ticker} ---\n"
-        ratios += f"Liquidity - Current Ratio: {current_ratio}\n"
-        ratios += f"Solvency - Debt to Equity: {debt_to_equity}\n"
-        ratios += f"Profitability - Profit Margin: {profit_margin}%\n"
-        ratios += f"Profitability - ROE: {roe}%\n"
+        report += f"\n--- 4. Profitability Ratios ---\n"
+        report += f"Gross Profit Margin: {gross_margin}\n"
+        report += f"Operating Profit Margin: {operating_margin}\n"
+        report += f"Net Profit Margin: {net_profit_margin}\n"
+        report += f"Return on Assets (ROA): {return_on_assets}\n"
+        report += f"Return on Equity (ROE): {return_on_equity}\n"
         
-        return ratios
+        return report
     except Exception as e:
         return f"Error calculating ratios: {str(e)}"
 

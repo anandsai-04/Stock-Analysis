@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Auto-load API keys from .env file
 
 from agents.supervisor import run_supervisor
 
